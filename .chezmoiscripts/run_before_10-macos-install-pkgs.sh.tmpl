@@ -1,0 +1,11 @@
+{{- if (eq .chezmoi.os "darwin") -}}
+#!/bin/zsh
+# vim: set ft=zsh :
+
+if [[ -f "$HOME/.config/brewfile/Brewfile" ]]; then
+  BREWFILE="$HOME/.config/brewfile/Brewfile"
+else
+  BREWFILE="$HOME/.local/share/chezmoi/dot_config/brewfile/src.Brewfile"
+fi
+HOMEBREW_BREWFILE=$BREWFILE brew-file --on_request install
+{{ end -}}

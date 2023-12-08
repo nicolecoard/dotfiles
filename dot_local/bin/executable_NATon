@@ -1,0 +1,131 @@
+#!/bin/zsh
+# vim: set ft=zsh :
+
+VPN_SUBNET="10.2"
+
+enable_nat() {
+    sudo pfctl -a com.apple/CpeConnShare -F nat>/dev/null 2>&1
+    (
+    if [[ -n "$dhcp_interface" ]]; then
+        echo "nat on $vpn_interface inet from $dhcp_net to any -> ($vpn_interface) extfilter ei"
+        echo "nat on $internet_interface inet from $dhcp_net to any -> ($internet_interface) extfilter ei"
+    fi
+    if [[ -n "$bridge_net" ]]; then
+        echo "nat on $vpn_interface inet from $bridge_net to any -> ($vpn_interface) extfilter ei"
+        echo "nat on $internet_interface inet from $bridge_net to any -> ($internet_interface) extfilter ei"
+    fi
+    ) | sudo pfctl -a com.apple/CpeConnShare -f - >/dev/null 2>&1
+    sudo pfctl -e -f /etc/pf.conf >/dev/null 2>&1
+
+    sudo sysctl -w net.inet.ip.forwarding=1>/dev/null 2>&1
+
+    echo "Printing CPE conn share anchor settings:"
+    sudo pfctl -s nat -a com.apple/CpeConnShare
+}
+
+restart_bootp_service() {
+    service_name="com.apple.bootpd"
+    if sudo launchctl print system/$service_name > /dev/null 2>&1; then
+        sudo launchctl bootout system/$service_name
+    fi
+    sleep 5
+    sudo launchctl bootstrap system /System/Library/LaunchDaemons/bootps.plist
+}
+
+enable_dhcp_on_dongle() {
+    [[ -n "$dhcp_interface" ]] || return
+    sudo tee /etc/bootpd.plist>/dev/null <<- EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>bootp_enabled</key>
+    <false/>
+    <key>detect_other_dhcp_server</key>
+    <integer>1</integer>
+    <key>dhcp_enabled</key>
+    <array>
+        <string>$dhcp_interface</string>
+    </array>
+    <key>Subnets</key>
+    <array>
+        <dict>
+            <key>allocate</key>
+            <true/>
+            <key>lease_max</key>
+            <integer>86400</integer>
+            <key>lease_min</key>
+            <integer>86400</integer>
+            <key>name</key>
+            <string>192.168.200</string>
+            <key>net_address</key>
+            <string>192.168.200.0</string>
+            <key>net_mask</key>
+            <string>255.255.255.0</string>
+            <key>net_range</key>
+            <array>
+                <string>192.168.200.2</string>
+                <string>192.168.200.50</string>
+            </array>
+            <key>dhcp_router</key>
+            <string>192.168.200.1</string>
+            <key>dhcp_domain_name_server</key>
+            <string>10.29.2.45</string>
+        </dict>
+    </array>
+</dict>
+</plist>
+EOF
+    restart_bootp_service
+}
+
+get_bridge_ip() {
+   bridge="$1"
+   bridge_ip="$(ifconfig $bridge 2>/dev/null| awk '/inet/{print $2; exit}')"
+   if [[ -n "$bridge_ip" ]]; then
+      printf "%s" "$bridge_ip"
+   fi
+   printf ""
+}
+
+# Checks for VPN connection base on hardcoded subnet
+vpn_interface=$(ifconfig -a inet | grep -B 1 "$VPN_SUBNET" | grep utun | cut -d ":" -f 1)
+internet_interface=$(route get deploy.apple.com 2> /dev/null | grep interface | cut -d ' ' -f 4)
+# Exits script if it cant find vpn connection
+if [[ -z $vpn_interface || -z "$internet_interface" ]]; then
+  echo "Connection Share: required connections not found, exiting..."
+  exit
+fi
+
+
+# get options/flags
+if [[ -n "$1" ]]; then
+   bridge_to_nat="$1"
+fi
+
+# try and guest the bridge UTM is using
+if [[ -z "$bridge_to_nat" ]]; then
+    echo "Discovering possible bridges to NAT..."
+    for bridge in $(ifconfig | awk -F":" '/^bridge/{print $1}'); do
+        bridge_ip="$(get_bridge_ip "$bridge")"
+        if [[ -n "$bridge_ip" ]]; then
+            bridge_to_nat="$bridge"
+            break
+        fi
+    done
+fi
+
+echo "NAT will be enabled on: $bridge_to_nat"
+bridge_ip="$(ifconfig $bridge_to_nat 2>/dev/null| awk '/inet/{print $2; exit}')"
+bridge_net="${bridge_ip/%.1/.0/24}"
+
+dhcp_interface=$(ifconfig -a inet | grep -B 2 "192.168.200" | grep en | cut -d ":" -f 1)
+dhcp_net="192.168.200.0/24"
+
+if [[ -z "$bridge_net" && -z "$dhcp_interface" ]]; then
+    echo "Found no sources to NAT..."
+    exit
+fi
+
+enable_nat
+enable_dhcp_on_dongle

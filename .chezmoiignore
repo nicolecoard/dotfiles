@@ -1,0 +1,27 @@
+.config/oh-my-zsh/cache
+.config/oh-my-zsh/cache/**
+.config/oh-my-zsh/**/*.zwc
+
+.config/iterm2/src.*
+.config/iterm2/README.md
+
+.config/brewfile/src.*
+
+README.md
+
+# All kinds of helper scripts
+scripts
+
+# asdf
+.local/share/asdf/plugins
+.local/share/asdf/downloads
+.local/share/asdf/installs
+.local/share/asdf/repository
+.local/share/asdf/shims
+.local/share/asdf/tmp
+
+# zsh complied files
+**/*.zwc
+
+# images
+images/**

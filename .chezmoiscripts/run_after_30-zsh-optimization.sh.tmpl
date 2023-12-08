@@ -1,0 +1,87 @@
+#!/bin/zsh
+# vim: set ft=zsh :
+
+XDG_BIN_HOME="$HOME/.local/bin"
+XDG_DATA_HOME="$HOME/.local/share"
+XDG_CONFIG_HOME="$HOME/.config"
+
+function zcompile-many() {
+  local f
+  for f; do zcompile -R -- "$f".zwc "$f"; done
+}
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  if [[ "$(uname -m)" == "arm"* ]] then
+    BREW="/opt/homebrew/bin/brew"
+  else
+    BREW="/usr/local/bin/brew"
+  fi
+else
+  BREW="$(command -v brew)"
+fi
+
+if [[ -n "$BREW" ]]; then
+  BREW_INIT="$HOME/.config/zsh/brew/init.zsh"
+  BREW_CONF="$HOME/.config/zsh/brew/conf.zsh"
+  mkdir -p "$(dirname $BREW_INIT)"
+  env -i bash --noprofile --norc -c "HOME=$HOME $BREW shellenv" >| "$BREW_INIT"
+  if [[ -f $($BREW --prefix)/etc/brew-wrap ]]; then
+    \cp "$($BREW --prefix)/etc/brew-wrap" $BREW_CONF
+  fi
+fi
+
+ASDF_INIT="$HOME/.config/zsh/asdf/init.zsh"
+if [[ -f "$HOME/.local/share/asdf/lib/asdf.sh" ]]; then
+  mkdir -p "$(dirname $ASDF_INIT)"
+  cat <<'EOF' >| $ASDF_INIT
+# asdf
+export ASDF_DATA_DIR=${XDG_DATA_HOME}/asdf
+path=(${ASDF_DATA_DIR}/bin $path)
+fpath=(${ASDF_DATA_DIR}/completions $fpath)
+EOF
+  {
+    cat "$HOME/.local/share/asdf/lib/asdf.sh"
+  }>> "$ASDF_INIT"
+fi
+
+DIRENV_CONF="$HOME/.config/zsh/direnv/conf.zsh"
+if (( $+commands[direnv] )); then
+  mkdir -p "$(dirname $DIRENV_CONF)"
+  direnv hook zsh >! "$DIRENV_CONF"
+fi
+
+STARSHIP_CONF="$HOME/.config/zsh/starship/conf.zsh"
+if (( $+commands[starship] )); then
+  mkdir -p "$(dirname $STARSHIP_CONF)"
+  starship init zsh --print-full-init >! "$STARSHIP_CONF"
+fi
+
+# grc clean up
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  [[ -s "$($BREW --prefix)/etc/grc.zsh" ]] && GRC_SRC="$($BREW --prefix)/etc/grc.zsh"
+else
+  [[ -s "/etc/grc.zsh" ]] && GRC_SRC="/etc/grc.zsh"
+fi
+if [[ -n "$GRC_SRC" ]]; then
+  # I don't care where it came from, it's gettin nuked.
+  GRC_CONF="$HOME/.config/zsh/grc"
+  rm -rf $GRC_CONF
+fi
+
+# clean zsh compiled files
+fd -e zwc --base-directory "$XDG_DATA_HOME/zsh/plugins" -x rm {}
+fd -e zwc --base-directory "$XDG_CONFIG_HOME/zsh" -x rm {}
+
+if [[ -e $XDG_DATA_HOME/zsh/plugins/fast-syntax-highlighting ]]; then
+  zcompile-many $XDG_DATA_HOME/zsh/plugins/fast-syntax-highlighting/{F-Sy-H*,functions/*,**/*.ch,**/*.zsh}
+fi
+if [[ -e $XDG_DATA_HOME/zsh/plugins/zsh-autosuggestions ]]; then
+  zcompile-many $XDG_DATA_HOME/zsh/plugins/zsh-autosuggestions/{zsh-autosuggestions.zsh,src/**/*.zsh}
+fi
+zcompile-many $XDG_DATA_HOME/zsh/plugins/oh-my-zsh/plugins/git/*.zsh
+zcompile-many $XDG_DATA_HOME/zsh/plugins/base-config/**/*.zsh
+zcompile-many $XDG_DATA_HOME/zsh/plugins/fzf/**/*.zsh
+
+zcompile-many $XDG_CONFIG_HOME/zsh/**/*.zsh
+
+unfunction zcompile-many
