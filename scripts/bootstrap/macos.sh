@@ -5,13 +5,7 @@
 # OS Name
 OS_NAME="$(uname)"
 ARCH="$(uname -m)"
-
-if [ "$OS_NAME" = "Darwin" ] && [ "$ARCH" = "arm64" ]; then
-  BREW="/opt/homebrew/bin/brew"
-fi
-if [ "$OS_NAME" = "Darwin" ] && [ "$ARCH" != "arm64" ]; then
-  BREW="/usr/local/bin/brew"
-fi
+BREW_CMD="/opt/homebrew/bin/brew"
 
 RED="\033[1;31m"
 GREEN="\033[1;32m"
@@ -52,8 +46,8 @@ install_homebrew() {
 
 bootstrap_chezmoi() {
   # shellcheck disable=SC2046,SC1091
-  eval $($BREW shellenv zsh)
-  $BREW install --force chezmoi rcmdnk/file/brew-file
+  eval $($BREW_CMD shellenv zsh)
+  $BREW_CMD install --force chezmoi rcmdnk/file/brew-file
   # shellcheck disable=SC1091
   if [[ -f "$HOMEBREW_PREFIX/etc/brew-wrap" ]]; then
     export HOMEBREW_BREWFILE_ON_REQUEST=1

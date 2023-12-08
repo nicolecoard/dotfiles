@@ -96,7 +96,7 @@ install_homebrew
 bootstrap_brew_env
 setup_gnupg
 link-ssh-auth-sock
-chezmoi init git@github.com:mkearns87/dotfiles.git --branch "main" --apply
+chezmoi init https://github.com/mkearns87/dotfiles.git --apply
 
 # to do for private
 # have chezmoi clone down encyrpted versions of cpe config and aws-okta; then
