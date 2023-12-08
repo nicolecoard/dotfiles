@@ -11,13 +11,7 @@ export pinentry-program="/opt/homebrew/bin/pinentry-mac"
 # OS Name
 OS_NAME="$(uname)"
 ARCH="$(uname -m)"
-
-if [ "$OS_NAME" = "Darwin" ] && [ "$ARCH" = "arm64" ]; then
-  BREW="/opt/homebrew/bin/brew"
-fi
-if [ "$OS_NAME" = "Darwin" ] && [ "$ARCH" != "arm64" ]; then
-  BREW="/usr/local/bin/brew"
-fi
+BREW="/opt/homebrew/bin/brew"
 
 RED="\033[1;31m"
 GREEN="\033[1;32m"
