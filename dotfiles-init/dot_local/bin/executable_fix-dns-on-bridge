@@ -1,0 +1,55 @@
+#!/bin/zsh
+# vim: set ft=zsh :
+
+dnscrypt_launchd_daemon="/Library/Application Support/OpenDNS Roaming Client/com.opendns.osx.DNSCryptProxy.plist"
+alt_dnscrypt_daemon_name="alt.osx.DNSCryptProxy"
+alt_dnscrypt_launchd_daemon="/Library/LaunchDaemons/alt.opendns.osx.DNSCryptProxy.plist"
+if [[ ! -f "$dnscrypt_launchd_daemon" ]]; then
+   echo "OpenDNS not found ... nothing to fix!"
+   exit 0
+fi
+
+restart_dnscrypt_proxy() {
+   echo "Starting Alt DNSCryptProxy..."
+   if sudo launchctl print system/$alt_dnscrypt_daemon_name >/dev/null 2>&1 ; then
+      sudo launchctl bootout system/$alt_dnscrypt_daemon_name
+      sleep 5
+   fi
+   sudo launchctl bootstrap system $alt_dnscrypt_launchd_daemon
+}
+
+run_opendns_on_ip() {
+   ip="$1"
+   daemon_plist=
+   if [[ -f "$dnscrypt_launchd_daemon" ]]; then
+      echo "Updating bridge DNSCryptProxy..."
+      sed -e "s%com.opendns\(.osx.DNSCryptProxy\)%alt\1%g; s%127.0.0.1%$ip%g" \
+         "$dnscrypt_launchd_daemon" | sudo tee "$alt_dnscrypt_launchd_daemon" > /dev/null
+      restart_dnscrypt_proxy
+   fi
+}
+
+get_bridge_ip() {
+   bridge="$1"
+   bridge_ip="$(ifconfig $bridge 2>/dev/null| awk '/inet/{print $2; exit}')"
+   if [[ -n "$bridge_ip" ]]; then
+      printf "%s" "$bridge_ip"
+   fi
+   printf ""
+}
+
+# if user pass an ip, run altertnate OpenDNS daemon on given IP
+if [[ -n "$1" ]]; then
+   run_opendns_on_ip "$1"
+   exit 0
+fi
+
+# try and guest the bridge UTM is using
+# it usually has an ip
+for bridge in $(ifconfig | awk -F":" '/^bridge/{print $1}'); do
+   bridge_ip="$(get_bridge_ip "$bridge")"
+   if [[ -n "$bridge_ip" ]]; then
+      run_opendns_on_ip "$bridge_ip"
+      echo "Started OpenDNS on: $bridge_ip"
+   fi
+done

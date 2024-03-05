@@ -1,0 +1,74 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+
+# Allow only unique entries
+typeset -gU cdpath fpath mailpath PATH path config_files
+
+HOMEBREW_BREWFILE_ON_REQUEST=1
+ZSH_AUTOSUGGEST_USE_ASYNC=1
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1
+XDG_CONFIG_HOME="$HOME/.config"
+XDG_DATA_HOME="$HOME/.local/share"
+XDG_CACHE_HOME="$HOME/.cache"
+XDG_BIN_HOME="$HOME/.local/bin"
+GNUPGHOME="$XDG_CONFIG_HOME/gnupg"
+# GPG ssh auth configuration
+GPG_TTY="$(tty)"
+# SSH_AUTH_SOCK="$(/opt/homebrew/bin/gpgconf --list-dirs agent-ssh-socket)"
+# aws okta config
+AWS_OKTA_CONFIG="$HOME/.aws/aws_okta.yaml"
+AWS_PROFILE=cpe
+export XDG_DATA_HOME \
+  XDG_CONFIG_HOME \
+  XDG_CACHE_HOME \
+  XDG_BIN_HOME \
+  GNUPGHOME \
+  AWS_OKTA_CONFIG \
+  AWS_PROFILE \
+  HOMEBREW_BREWFILE_ON_REQUEST \
+  GPG_TTY
+#  SSH_AUTH_SOCK 
+
+/opt/homebrew/bin/gpgconf --launch gpg-agent
+
+# XDG bin path
+path=("$XDG_BIN_HOME" "/usr/local/munki" $path)
+
+# Some configuration are compiled and initialized by chezmoi
+# These can be found in .chezmoiscripts/run_after_30-zsh-optimization.sh.tmpl
+# load up inits, confs and paths, i.e homebrew/homebrew-file configs
+config_files=($ZDOTDIR/*/*.zsh)
+
+# load the path files
+for file in ${(M)config_files:#*/path.zsh}; do
+  source "$file"
+done
+
+# load init files
+for file in ${(M)config_files:#*/init.zsh}; do
+  source "$file"
+done
+
+plugins=(
+  "base-config/history/*.plugin.zsh"
+  "base-config/directory/*.plugin.zsh"
+  "base-config/completion/*.plugin.zsh"
+  "oh-my-zsh/plugins/git/*.plugin.zsh"
+  "fast-syntax-highlighting/*.plugin.zsh"
+  "zsh-autosuggestions/*.plugin.zsh"
+)
+for plugin in "${plugins[@]}"; do
+  for f ($XDG_DATA_HOME/zsh/plugins/$~plugin) source $f
+done
+
+# load everything but the path and init files
+# fzf completions/keybinds starhip in .chezmoiscripts/run_after_30-zsh-optimization.sh.tmpl
+for file in ${config_files}; do
+  source "$file"
+done
+unset config_files
+
+# xmanpage function
+function xman() { open x-man-page://$@ ; }
+
+# vim: ft=zsh :
