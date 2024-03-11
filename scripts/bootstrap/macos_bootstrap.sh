@@ -94,7 +94,7 @@ chezmoi init https://github.com/mkearns87/dotfiles.git --apply
 
 # to do for private
 # have chezmoi clone down encyrpted versions of cpe config and aws-okta; then
-# chezmoi init mkearns87
+# chezmoi init coardnicole
 # decrypt_files
 # chezmoi apply
 # also remove line 96 of this script
