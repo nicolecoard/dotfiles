@@ -5,7 +5,7 @@
 # environment variables for great justice
 export XDG_CONFIG_HOME="$HOME/.config"
 export GNUPGHOME="$XDG_CONFIG_HOME/gnupg"
-export TRUSTED_GPGKEY_FINGREPRINT="77D8616541A323FF03E6639947BEA857F03AFE90"
+export TRUSTED_GPGKEY_FINGREPRINT="a48e46c7cd3c182455e84d3e96e1f0187e2c33d1"
 export pinentry-program="/opt/homebrew/bin/pinentry-mac"
 
 # OS Name
