@@ -85,9 +85,9 @@ brew brew-file
 tap xcodesorg/made
 
 # App Store applications
-appstore 1569813296 1Password for Safari (2.17.1)
-appstore 1037126344 Apple Configurator (2.16)
-appstore 417375580 BetterSnapTool (1.9.9)
-appstore 682658836 GarageBand (10.4.9)
-appstore 430255202 Mactracker (7.12.12)
-appstore 1496833156 Playgrounds (4.4)
+#appstore 1569813296 1Password for Safari (2.17.1)
+#appstore 1037126344 Apple Configurator (2.16)
+#appstore 417375580 BetterSnapTool (1.9.9)
+#appstore 682658836 GarageBand (10.4.9)
+#appstore 430255202 Mactracker (7.12.12)
+#appstore 1496833156 Playgrounds (4.4)
