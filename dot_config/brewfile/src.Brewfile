@@ -64,9 +64,7 @@ cask 1password
 cask alfred
 cask apparency
 cask iterm2
-cask logitech-options
 cask munkiadmin
-cask rancher
 cask suspicious-package
 cask utm
 cask visual-studio-code
