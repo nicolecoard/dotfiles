@@ -69,7 +69,7 @@ cask suspicious-package
 cask utm
 cask visual-studio-code
 
-tap homebrew/cask-fonts
+
 cask font-fira-mono-nerd-font
 cask font-hack-nerd-font
 
